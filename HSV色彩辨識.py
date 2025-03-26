@@ -1,43 +1,47 @@
 import cv2
 import numpy as np
 
-def detect_red_hsv_range(image_path):
-    # 讀取圖片
+def show_hsv_on_click(image_path):
     image = cv2.imread(image_path)
     if image is None:
         print("Error: Image not found or could not be loaded.")
         return
-    
-    # 轉換成 HSV 色彩空間
-    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-    # 定義紅色範圍（兩段）
-    lower_red1 = np.array([0, 50, 50])  # 低飽和度範圍
-    upper_red1 = np.array([10, 255, 255])
-    lower_red2 = np.array([170, 50, 50])  # 高飽和度範圍
-    upper_red2 = np.array([180, 255, 255])
+    # 縮小顯示圖片
+    scale_percent = 50
+    width = int(image.shape[1] * scale_percent / 100)
+    height = int(image.shape[0] * scale_percent / 100)
+    resized_image = cv2.resize(image, (width, height))
+    hsv_resized = cv2.cvtColor(resized_image, cv2.COLOR_BGR2HSV)
 
-    # 建立遮罩，過濾紅色區域
-    mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
-    mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
-    mask = mask1 + mask2
+    display_image = resized_image.copy()
 
-    # 找出紅色區域的 HSV 值
-    red_pixels = hsv[mask > 0]  # 只取紅色區域的 HSV 值
+    def mouse_callback(event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            hsv_val = hsv_resized[y, x]
+            h, s, v = hsv_val
+            print(f"Clicked at ({x}, {y}) → H: {h}, S: {s}, V: {v}")
 
-    if len(red_pixels) == 0:
-        print("No red areas detected.")
-        return
+            # 畫圓 & 顯示 HSV 文字
+            cv2.circle(display_image, (x, y), 5, (255, 0, 0), -1)
+            text = f"H:{h} S:{s} V:{v}"
+            cv2.putText(display_image, text, (x + 10, y - 10), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            cv2.imshow("Click to Get HSV", display_image)
 
-    # 計算 HSV 的最小與最大範圍
-    min_hsv = np.min(red_pixels, axis=0)
-    max_hsv = np.max(red_pixels, axis=0)
+    cv2.namedWindow("Click to Get HSV", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Click to Get HSV", width, height)
+    cv2.setMouseCallback("Click to Get HSV", mouse_callback)
+    cv2.imshow("Click to Get HSV", display_image)
 
-    print(f"紅色區域的 HSV 範圍：")
-    print(f"最小值：H={min_hsv[0]}, S={min_hsv[1]}, V={min_hsv[2]}")
-    print(f"最大值：H={max_hsv[0]}, S={max_hsv[1]}, V={max_hsv[2]}")
+    while True:
+        key = cv2.waitKey(1)
+        if key == 27:  # 按 ESC 離開
+            break
 
-# 使用範例（請修改成你的圖片路徑）
-image_path = r"C:\Users\st\Downloads\60.png"
-detect_red_hsv_range(image_path)
+    cv2.destroyAllWindows()
+
+# 使用範例
+image_path = r"C:\Users\nicole\Downloads\60.png"
+show_hsv_on_click(image_path)
 
