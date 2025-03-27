@@ -45,9 +45,12 @@ def detect_red_regions_and_black(image_path):
 
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-    lower_red1 = np.array([0, 50, 154])
-    upper_red1 = np.array([15, 255, 255])
-    lower_red2 = np.array([165, 50, 154])
+    # 偵測亮紅（偏橘紅）
+    lower_red1 = np.array([0, 100, 100])
+    upper_red1 = np.array([10, 255, 255])
+
+    # 偵測深紅（你點到的 H=177, V=88 要在這範圍內）
+    lower_red2 = np.array([170, 100, 50])
     upper_red2 = np.array([180, 255, 255])
 
     mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
@@ -72,16 +75,20 @@ def detect_red_regions_and_black(image_path):
 
     sorted_contours.sort(key=lambda c: c[1])
 
-    for i, (contour, cx) in enumerate(sorted_contours):
+    # 計數器初始化
+    circle_count = 0
+
+    for contour, cx in sorted_contours:
         ellipse = cv2.fitEllipse(contour)
         (ex, ey), (major_axis, minor_axis), angle = ellipse
 
         length_cm = major_axis / black_line_length
         width_cm = minor_axis / black_line_length
-        if length_cm < 1.3 or width_cm < 1.3:
+        if length_cm < 1.1 or width_cm < 1.1:
             continue
 
-        print(f"圓點{i + 1}：{length_cm:.2f} cm x {width_cm:.2f} cm")
+        circle_count += 1
+        print(f"圓點{circle_count}：{length_cm:.2f} cm x {width_cm:.2f} cm")
 
         text = f"{length_cm:.2f} cm x {width_cm:.2f} cm"
 
@@ -90,22 +97,15 @@ def detect_red_regions_and_black(image_path):
         cy = int(M["m01"] / M["m00"])
         (text_w, text_h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 1.2, 4)
 
-        if i % 2 == 0:
-            text_pos = (cx - text_w // 2, cy - 20)
-        else:
-            text_pos = (cx - text_w // 2, cy + text_h + 20)
-
-        cv2.rectangle(image,
-                      (text_pos[0], text_pos[1] - text_h),
-                      (text_pos[0] + text_w, text_pos[1] + 10),
-                      (255, 255, 255), -1)
+        text_pos = (cx - text_w // 2, cy - 20)
         cv2.putText(image, text, text_pos,
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 0, 0), 4)
 
-        # ➤ 在橢圓正下方標示「圓點1、圓點2...」
-        label = f"Circle {i + 1}"
+        # ➤ 在橢圓正下方標示「Circle 1、2、3...」
+        label = f"Circle {circle_count}"
         (lw, lh), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
-        label_pos = (cx - lw // 2, int(ey + major_axis / 2) + lh + 10)
+        text_margin = 20  # 調整這個值控制距離
+        label_pos = (cx - lw // 2, int(ey + major_axis / 2) + lh + 70)
         cv2.putText(image, label, label_pos,
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
@@ -133,6 +133,6 @@ def detect_red_regions_and_black(image_path):
     cv2.destroyAllWindows()
 
 # 使用範例（圖片路徑請換成你自己那張）
-image_path = r"C:\Users\nicole\Downloads\30.png"
+image_path = r"C:\Users\user\Downloads\40.png"
 detect_red_regions_and_black(image_path)
 
